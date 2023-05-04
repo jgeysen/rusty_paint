@@ -60,7 +60,10 @@ fn mouse_moved(app: &App, model: &mut Model, coord: Point2) {
         .x_y(coord[0], coord[1])
         .radius(model.radius)
         .color(model.color);
-        model.history.extend([(app.mouse.x, app.mouse.y, model.color, model.radius)]);
+        
+        if !model.egui.ctx().is_pointer_over_area() {
+            model.history.extend([(app.mouse.x, app.mouse.y, model.color, model.radius)]);
+        }
     }
 }
 
