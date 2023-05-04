@@ -1,4 +1,4 @@
-use nannou::prelude::*;
+use nannou::{prelude::*};
 use nannou_egui::{egui, Egui};
 
 const WIDTH: f32 = 640.0;
@@ -23,6 +23,7 @@ fn model(app: &App) -> Model {
         .new_window()
         .mouse_pressed(mouse_pressed)
         .mouse_released(mouse_released)
+        .key_pressed(key_pressed)
         .mouse_moved(mouse_moved)
         .title("Nannou + Egui")
         .size(WIDTH as u32, HEIGHT as u32)
@@ -54,16 +55,24 @@ fn mouse_released(_app: &App, model: &mut Model, _button: MouseButton) {
 }
 
 fn mouse_moved(app: &App, model: &mut Model, coord: Point2) {
-    let draw = app.draw();
     if model.pressed {
-         draw.ellipse()
-        .x_y(coord[0], coord[1])
-        .radius(model.radius)
-        .color(model.color);
-        
+        let last_draw = model.history.last();
+        match last_draw {
+            Some(ld) => {
+                if coord[0] == ld.0 && coord[1] == ld.1 { return }
+            }
+            _ => {}
+        }
+
         if !model.egui.ctx().is_pointer_over_area() {
             model.history.extend([(app.mouse.x, app.mouse.y, model.color, model.radius)]);
         }
+    }
+}
+
+fn key_pressed(_app: &App, _model: &mut Model, _key: Key) {
+    if _key == Key::Z && _app.keys.mods.logo() {
+        _model.history.pop();
     }
 }
 
@@ -76,6 +85,8 @@ fn update(_app: &App, model: &mut Model, update: Update) {
         ref mut history,
         ref mut background_colour
     } = *model;
+
+    dbg!(&model.history);
 
     egui.set_elapsed_time(update.since_start);
     let ctx = egui.begin_frame();
