@@ -39,7 +39,7 @@ fn model(app: &App) -> Model {
         radius: 40.0,
         color: hsv(10.0, 0.5, 1.0),
         pressed: false,
-        background_colour: hsv(10.0, 0.5, 1.0),
+        background_colour: hsv(0.0, 0.0, 255.0),
     }
 }
 
@@ -76,7 +76,7 @@ fn update(_app: &App, model: &mut Model, update: Update) {
 
     egui.set_elapsed_time(update.since_start);
     let ctx = egui.begin_frame();
-    egui::Window::new("EGUI window")
+    egui::Window::new("Drawing parameters")
         .default_size(egui::vec2(0.0, 200.0))
         .show(&ctx, |ui| {
             ui.separator();
