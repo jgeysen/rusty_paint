@@ -1,4 +1,4 @@
-use nannou::prelude::*;
+use nannou::{prelude::*};
 use nannou_egui::{egui, Egui};
 use std::fmt;
 
@@ -37,6 +37,7 @@ fn model(app: &App) -> Model {
         .new_window()
         .mouse_pressed(mouse_pressed)
         .mouse_released(mouse_released)
+        .key_pressed(key_pressed)
         .mouse_moved(mouse_moved)
         .title("Nannou + Egui")
         .size(WIDTH as u32, HEIGHT as u32)
@@ -64,23 +65,31 @@ fn mouse_pressed(app: &App, model: &mut Model, button: MouseButton) {
         let draw = app.draw();
         model.pressed = true;
 
-        if !model.line_start.is_empty() {
-             let ellipse_start = Ellipse {
-                x: model.line_start[0].0,
-                y: model.line_start[0].1,
-                color: model.color,
-                radius: model.radius
-            };
-            let ellipse_end = Ellipse {
-                x: app.mouse.x,
-                y: app.mouse.y,
-                color: model.color,
-                radius: model.radius
-            };
-            model.history.extend([vec![ellipse_start, ellipse_end]]);
+        if model.egui.ctx().is_pointer_over_area() {
             model.line_start.pop();
-        } else {
-            model.line_start = vec![(app.mouse.x, app.mouse.y)];
+        }
+
+        if model.tool == Enum::Line {
+            if !model.line_start.is_empty() {
+                let ellipse_start = Ellipse {
+                    x: model.line_start[0].0,
+                    y: model.line_start[0].1,
+                    color: model.color,
+                    radius: model.radius
+                };
+                let ellipse_end = Ellipse {
+                    x: app.mouse.x,
+                    y: app.mouse.y,
+                    color: model.color,
+                    radius: model.radius
+                };
+                model.history.extend([vec![ellipse_start, ellipse_end]]);
+                model.line_start.pop();
+            } else {
+                if !model.egui.ctx().is_pointer_over_area() {
+                    model.line_start = vec![(app.mouse.x, app.mouse.y)];
+                }
+            }
         }
     }
 }
@@ -90,8 +99,17 @@ fn mouse_released(_app: &App, model: &mut Model, _button: MouseButton) {
 }
 
 fn mouse_moved(app: &App, model: &mut Model, coord: Point2) {
-    let draw = app.draw();
     if model.pressed {
+        let last_draw = model.history.last();
+        match last_draw {
+            Some(ld) => {
+                if ld.is_empty() { return }
+                let last_draw_el = &ld[ld.len() - 1];
+                if coord[0] == last_draw_el.x && coord[1] == last_draw_el.y { return }
+            }
+            _ => {}
+        }
+
         if !model.egui.ctx().is_pointer_over_area() {
             let ellipse = Ellipse {
                     x: app.mouse.x,
@@ -100,7 +118,6 @@ fn mouse_moved(app: &App, model: &mut Model, coord: Point2) {
                     radius: model.radius
             };
             model.history.extend([vec![ellipse]]);
-            model.line_start.pop();
         }
     }
 }
@@ -117,6 +134,12 @@ impl fmt::Display for Enum {
     }
 }
 
+fn key_pressed(_app: &App, _model: &mut Model, _key: Key) {
+    if _key == Key::Z && _app.keys.mods.logo() {
+        _model.history.pop();
+    }
+}
+
 fn update(_app: &App, model: &mut Model, update: Update) {
     let Model {
         ref mut egui,
@@ -128,7 +151,6 @@ fn update(_app: &App, model: &mut Model, update: Update) {
         ref mut line_start,
         ref mut tool
     } = *model;
-
 
     egui.set_elapsed_time(update.since_start);
     let ctx = egui.begin_frame();
@@ -149,8 +171,9 @@ fn update(_app: &App, model: &mut Model, update: Update) {
                     .clicked()
                 {
                     model.tool = option;
+                    model.line_start.pop();
                 }
-            }
+            };
 
             ui.label("Select the ellipse colour");
             edit_hsv(ui, color);
@@ -177,7 +200,7 @@ fn view(app: &App, model: &Model, frame: Frame) {
     for ellipse_vec in &model.history{
         if ellipse_vec.len() == 2 {
             draw.line()
-            .weight(ellipse_vec[1].radius)
+            .weight(2.0*ellipse_vec[1].radius)
             .color(ellipse_vec[1].color)
             .points(nannou::geom::vec2(ellipse_vec[0].x, ellipse_vec[0].y), nannou::geom::vec2(ellipse_vec[1].x, ellipse_vec[1].y));
         } else {
