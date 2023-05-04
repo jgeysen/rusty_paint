@@ -14,6 +14,7 @@ struct Model {
     radius: f32,
     color: Hsv,
     pressed: bool,
+    background_colour: Hsv
 }
 
 fn model(app: &App) -> Model {
@@ -37,7 +38,8 @@ fn model(app: &App) -> Model {
         history: Vec::new(),
         radius: 40.0,
         color: hsv(10.0, 0.5, 1.0),
-        pressed: false
+        pressed: false,
+        background_colour: hsv(10.0, 0.5, 1.0),
     }
 }
 
@@ -54,7 +56,6 @@ fn mouse_released(_app: &App, _model: &mut Model, _button: MouseButton) {
 fn mouse_moved(_app: &App, _model: &mut Model, _coord: Point2) {
     let draw = _app.draw();
     if _model.pressed {
-         dbg!(_coord);
          draw.ellipse()
         .x_y(_coord[0], _coord[1])
         .radius(_model.radius)
@@ -70,6 +71,7 @@ fn update(_app: &App, model: &mut Model, update: Update) {
         ref mut color,
         ref mut pressed,
         ref mut history,
+        ref mut background_colour
     } = *model;
 
     egui.set_elapsed_time(update.since_start);
@@ -80,7 +82,10 @@ fn update(_app: &App, model: &mut Model, update: Update) {
             ui.separator();
             ui.label("Tune parameters with ease");
             ui.add(egui::Slider::new(radius, 10.0..=100.0).text("Radius"));
+            ui.label("Select the ellipse colour");
             edit_hsv(ui, color);
+            ui.label("Select the background colour");
+            edit_hsv(ui,background_colour)
         });
 }
 
@@ -92,7 +97,7 @@ fn raw_window_event(_app: &App, model: &mut Model, event: &nannou::winit::event:
 fn view(app: &App, model: &Model, frame: Frame) {
     let draw = app.draw();
 
-    frame.clear(BLACK);
+    frame.clear(model.background_colour);
 
     draw.ellipse()
         .x_y(app.mouse.x, app.mouse.y)
