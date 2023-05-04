@@ -11,10 +11,19 @@ fn main() {
 struct Model {
     egui: Egui,
     history: Vec<(f32,f32,Hsv,f32)>,
+    line_history: Vec<Line>,
+    line_start: Vec<(f32, f32)>,
     radius: f32,
     color: Hsv,
     pressed: bool,
     background_colour: Hsv
+}
+
+struct Line {
+    thickness: f32,
+    color: Hsv,
+    start_point: Vec<(f32, f32)>,
+    end_point: Vec<(f32, f32)>
 }
 
 fn model(app: &App) -> Model {
@@ -36,6 +45,8 @@ fn model(app: &App) -> Model {
     Model {
         egui: Egui::from_window(&window),
         history: Vec::new(),
+        line_history: Vec::new(),
+        line_start: Vec::new(),
         radius: 40.0,
         color: hsv(10.0, 0.5, 1.0),
         pressed: false,
@@ -45,9 +56,25 @@ fn model(app: &App) -> Model {
 
 fn mouse_pressed(_app: &App, model: &mut Model, button: MouseButton) {
     if button == MouseButton::Left {
-        model.pressed = true
+        let draw = _app.draw();
+        model.pressed = true;
+
+
+        if !model.line_start.is_empty() {
+            let line = Line {
+                thickness: model.radius,
+                start_point: vec![(model.line_start[0].0, model.line_start[0].1)],
+                color: model.color,
+                end_point: vec![(_app.mouse.x, _app.mouse.y)],
+            };
+            model.line_history.push(line);
+            model.line_start.pop();
+            model.line_start.pop();
+
+        } else {
+            model.line_start = vec![(_app.mouse.x, _app.mouse.y)];
+        }
     }
-    
 }
 fn mouse_released(_app: &App, model: &mut Model, _button: MouseButton) {
     model.pressed = false
@@ -74,7 +101,9 @@ fn update(_app: &App, model: &mut Model, update: Update) {
         ref mut color,
         ref mut pressed,
         ref mut history,
-        ref mut background_colour
+        ref mut background_colour,
+        ref mut line_history,
+        ref mut line_start,
     } = *model;
 
     egui.set_elapsed_time(update.since_start);
@@ -106,6 +135,13 @@ fn view(app: &App, model: &Model, frame: Frame) {
         .x_y(app.mouse.x, app.mouse.y)
         .radius(model.radius)
         .color(model.color);
+
+    for line in &model.line_history {
+        draw.line()
+            .weight(line.thickness)
+            .color(line.color)
+            .points(nannou::geom::vec2(line.start_point[0].0, line.start_point[0].1), nannou::geom::vec2(line.end_point[0].0, line.end_point[0].1));
+    }
 
     for (x,y,color,radius) in &model.history{
          draw.ellipse()
