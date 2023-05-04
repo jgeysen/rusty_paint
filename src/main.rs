@@ -10,7 +10,7 @@ fn main() {
 
 struct Model {
     egui: Egui,
-    history: Vec<(f32,f32)>,
+    history: Vec<(f32,f32,Hsv,f32)>,
     radius: f32,
     color: Hsv,
 }
@@ -37,11 +37,9 @@ fn model(app: &App) -> Model {
     }
 }
 
-fn mouse_pressed(_app: &App, _model: &mut Model, _button: MouseButton) {
-    let draw = _app.draw();
-
-    if _button == MouseButton::Left{
-        _model.history.extend([(_app.mouse.x, _app.mouse.y)]);
+fn mouse_pressed(app: &App, model: &mut Model, button: MouseButton) {
+    if button == MouseButton::Left{
+        model.history.extend([(app.mouse.x, app.mouse.y, model.color, model.radius)]);
     }
 }
 
@@ -80,11 +78,11 @@ fn view(app: &App, model: &Model, frame: Frame) {
         .radius(model.radius)
         .color(model.color);
 
-    for (x,y) in &model.history{
+    for (x,y,color,radius) in &model.history{
          draw.ellipse()
         .x_y(*x, *y)
-        .radius(model.radius)
-        .color(model.color);
+        .radius(*radius)
+        .color(*color);
     }
 
     draw.to_frame(app, &frame).unwrap();
