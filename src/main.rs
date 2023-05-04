@@ -12,6 +12,7 @@ struct Model {
     egui: Egui,
     radius: f32,
     color: Hsv,
+    pressed: bool,
 }
 
 fn model(app: &App) -> Model {
@@ -19,6 +20,8 @@ fn model(app: &App) -> Model {
     let window_id = app
         .new_window()
         .mouse_pressed(mouse_pressed)
+        .mouse_released(mouse_released)
+        .mouse_moved(mouse_moved)
         .title("Nannou + Egui")
         .size(WIDTH as u32, HEIGHT as u32)
         .raw_event(raw_window_event) // This is where we forward all raw events for egui to process them
@@ -32,16 +35,26 @@ fn model(app: &App) -> Model {
         egui: Egui::from_window(&window),
         radius: 40.0,
         color: hsv(10.0, 0.5, 1.0),
+        pressed: false
     }
 }
 
 fn mouse_pressed(_app: &App, _model: &mut Model, _button: MouseButton) {
-    let draw = _app.draw();
+    if _button == MouseButton::Left {
+        _model.pressed = true
+    }
+    
+}
+fn mouse_released(_app: &App, _model: &mut Model, _button: MouseButton) {
+    _model.pressed = false
+}
 
-    if _button == MouseButton::Left{
-         dbg!(_app.mouse.x, _app.mouse.y);
+fn mouse_moved(_app: &App, _model: &mut Model, _coord: Point2) {
+    let draw = _app.draw();
+    if _model.pressed {
+         dbg!(_coord);
          draw.ellipse()
-        .x_y(100.0, 100.0)
+        .x_y(_coord[0], _coord[1])
         .radius(_model.radius)
         .color(_model.color);
     }
@@ -52,6 +65,7 @@ fn update(_app: &App, model: &mut Model, update: Update) {
         ref mut egui,
         ref mut radius,
         ref mut color,
+        ref mut pressed,
     } = *model;
 
     egui.set_elapsed_time(update.since_start);
