@@ -1,4 +1,6 @@
 use nannou::{prelude::*};
+use nannou_audio as audio;
+use nannou_audio::Buffer;
 use nannou_egui::{egui, Egui};
 
 const WIDTH: f32 = 640.0;
@@ -38,7 +40,13 @@ struct Model {
     radius: f32,
     color: Hsv,
     pressed: bool,
-    background_colour: Hsv
+    background_colour: Hsv,
+    stream: audio::Stream<Audio>,
+}
+
+struct Audio {
+    phase: f64,
+    hz: f64,
 }
 
 struct Line {
@@ -65,6 +73,23 @@ fn model(app: &App) -> Model {
 
     let window = app.window(window_id).unwrap();
 
+    // Initialise the audio API so we can spawn an audio stream.
+    let audio_host = audio::Host::new();
+
+    // Initialise the state that we want to live on the audio thread.
+    let model = Audio {
+        phase: 0.0,
+        hz: 440.0,
+    };
+
+    let stream = audio_host
+        .new_output_stream(model)
+        .render(audio)
+        .build()
+        .unwrap();
+
+    stream.pause().unwrap();
+
     Model {
         egui: Egui::from_window(&window),
         history: Vec::new(),
@@ -74,6 +99,7 @@ fn model(app: &App) -> Model {
         color: hsv(10.0, 0.5, 1.0),
         pressed: false,
         background_colour: hsv(0.0, 0.0, 255.0),
+        stream,
     }
 }
 
@@ -129,6 +155,12 @@ fn mouse_moved(app: &App, model: &mut Model, coord: Point2) {
 
 fn key_pressed(_app: &App, _model: &mut Model, _key: Key) {
     if _key == Key::Z && _app.keys.mods.logo() {
+        if _model.stream.is_playing() {
+            _model.stream.pause().unwrap();
+        } else {
+            _model.stream.play().unwrap();
+        }
+
         _model.history.pop();
     }
 }
@@ -143,6 +175,7 @@ fn update(_app: &App, model: &mut Model, update: Update) {
         ref mut background_colour,
         ref mut line_history,
         ref mut line_start,
+        ref mut stream,
     } = *model;
 
     egui.set_elapsed_time(update.since_start);
@@ -213,5 +246,20 @@ fn edit_hsv(ui: &mut egui::Ui, color: &mut Hsv) {
     .changed()
     {
         *color = nannou::color::hsv(egui_hsv.h, egui_hsv.s, egui_hsv.v);
+    }
+}
+
+// A function that renders the given `Audio` to the given `Buffer`.
+// In this case we play a simple sine wave at the audio's current frequency in `hz`.
+fn audio(audio: &mut Audio, buffer: &mut Buffer) {
+    let sample_rate = buffer.sample_rate() as f64;
+    let volume = 0.5;
+    for frame in buffer.frames_mut() {
+        let sine_amp = (8.0 * PI * (audio.phase as f32)).sin() as f32;
+        audio.phase += audio.hz / sample_rate;
+        audio.phase %= sample_rate;
+        for channel in frame {
+            *channel = sine_amp * volume;
+        }
     }
 }
