@@ -98,6 +98,7 @@ fn mouse_pressed(_app: &App, model: &mut Model, button: MouseButton) {
         }
     }
 }
+
 fn mouse_released(_app: &App, model: &mut Model, _button: MouseButton) {
     model.pressed = false
 }
@@ -107,7 +108,9 @@ fn mouse_moved(app: &App, model: &mut Model, coord: Point2) {
         let last_draw = model.history.last();
         match last_draw {
             Some(ld) => {
-                if coord[0] == ld.0 && coord[1] == ld.1 { return }
+                if ld.is_empty() { return }
+                let last_draw_el = &ld[ld.len() - 1];
+                if coord[0] == last_draw_el.x && coord[1] == last_draw_el.y { return }
             }
             _ => {}
         }
