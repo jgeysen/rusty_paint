@@ -18,6 +18,7 @@ fn model(app: &App) -> Model {
     // Create a new window! Store the ID so we can refer to it later.
     let window_id = app
         .new_window()
+        .mouse_pressed(mouse_pressed)
         .title("Nannou + Egui")
         .size(WIDTH as u32, HEIGHT as u32)
         .raw_event(raw_window_event) // This is where we forward all raw events for egui to process them
@@ -31,6 +32,18 @@ fn model(app: &App) -> Model {
         egui: Egui::from_window(&window),
         radius: 40.0,
         color: hsv(10.0, 0.5, 1.0),
+    }
+}
+
+fn mouse_pressed(_app: &App, _model: &mut Model, _button: MouseButton) {
+    let draw = _app.draw();
+
+    if _button == MouseButton::Left{
+         dbg!(_app.mouse.x, _app.mouse.y);
+         draw.ellipse()
+        .x_y(100.0, 100.0)
+        .radius(_model.radius)
+        .color(_model.color);
     }
 }
 
