@@ -15,37 +15,14 @@ struct Ellipse {
     radius: f32
 }
 
-struct Triangle {
-    x: f32,
-    y: f32,
-    z: f32,
-    color: Hsv
-}
-
-struct Rectangle {
-    x: f32,
-    y: f32,
-    z: f32,
-    w: f32,
-    color: Hsv
-}
-
 struct Model {
     egui: Egui,
     history: Vec<Vec<Ellipse>>,
-    line_history: Vec<Line>,
     line_start: Vec<(f32, f32)>,
     radius: f32,
     color: Hsv,
     pressed: bool,
     background_colour: Hsv
-}
-
-struct Line {
-    thickness: f32,
-    color: Hsv,
-    start_point: Vec<(f32, f32)>,
-    end_point: Vec<(f32, f32)>
 }
 
 fn model(app: &App) -> Model {
@@ -67,7 +44,6 @@ fn model(app: &App) -> Model {
     Model {
         egui: Egui::from_window(&window),
         history: Vec::new(),
-        line_history: Vec::new(),
         line_start: Vec::new(),
         radius: 40.0,
         color: hsv(10.0, 0.5, 1.0),
@@ -76,27 +52,32 @@ fn model(app: &App) -> Model {
     }
 }
 
-fn mouse_pressed(_app: &App, model: &mut Model, button: MouseButton) {
+fn mouse_pressed(app: &App, model: &mut Model, button: MouseButton) {
     if button == MouseButton::Left {
-        let draw = _app.draw();
+        let draw = app.draw();
         model.pressed = true;
 
         if !model.line_start.is_empty() {
-            let line = Line {
-                thickness: model.radius,
-                start_point: vec![(model.line_start[0].0, model.line_start[0].1)],
+             let ellipse_start = Ellipse {
+                x: model.line_start[0].0,
+                y: model.line_start[0].1,
                 color: model.color,
-                end_point: vec![(_app.mouse.x, _app.mouse.y)],
+                radius: model.radius
             };
-            model.line_history.push(line);
+            let ellipse_end = Ellipse {
+                x: app.mouse.x,
+                y: app.mouse.y,
+                color: model.color,
+                radius: model.radius
+            };
+            model.history.extend([vec![ellipse_start, ellipse_end]]);
             model.line_start.pop();
-            model.line_start.pop();
-
         } else {
-            model.line_start = vec![(_app.mouse.x, _app.mouse.y)];
+            model.line_start = vec![(app.mouse.x, app.mouse.y)];
         }
     }
 }
+
 fn mouse_released(_app: &App, model: &mut Model, _button: MouseButton) {
     model.pressed = false
 }
@@ -112,6 +93,7 @@ fn mouse_moved(app: &App, model: &mut Model, coord: Point2) {
                     radius: model.radius
             };
             model.history.extend([vec![ellipse]]);
+            model.line_start.pop();
         }
     }
 }
@@ -124,7 +106,6 @@ fn update(_app: &App, model: &mut Model, update: Update) {
         ref mut pressed,
         ref mut history,
         ref mut background_colour,
-        ref mut line_history,
         ref mut line_start,
     } = *model;
 
@@ -158,19 +139,19 @@ fn view(app: &App, model: &Model, frame: Frame) {
         .radius(model.radius)
         .color(model.color);
 
-    for line in &model.line_history {
-        draw.line()
-            .weight(line.thickness)
-            .color(line.color)
-            .points(nannou::geom::vec2(line.start_point[0].0, line.start_point[0].1), nannou::geom::vec2(line.end_point[0].0, line.end_point[0].1));
-    }
-
     for ellipse_vec in &model.history{
-        for el in ellipse_vec{
-             draw.ellipse()
-            .x_y(el.x, el.y)
-            .radius(el.radius)
-            .color(el.color);
+        if ellipse_vec.len() == 2 {
+            draw.line()
+            .weight(ellipse_vec[1].radius)
+            .color(ellipse_vec[1].color)
+            .points(nannou::geom::vec2(ellipse_vec[0].x, ellipse_vec[0].y), nannou::geom::vec2(ellipse_vec[1].x, ellipse_vec[1].y));
+        } else {
+            for el in ellipse_vec{
+                draw.ellipse()
+                .x_y(el.x, el.y)
+                .radius(el.radius)
+                .color(el.color);
+            }
         }
     }
 
