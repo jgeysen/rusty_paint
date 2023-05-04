@@ -1,5 +1,10 @@
 use nannou::prelude::*;
 use nannou_egui::{egui, Egui};
+use std::fmt;
+
+#[derive(Debug, PartialEq, Clone, Copy)]
+enum Enum { Square, Rectangle, Line, Ellipse, Triangle }
+
 
 const WIDTH: f32 = 640.0;
 const HEIGHT: f32 = 360.0;
@@ -14,7 +19,8 @@ struct Model {
     radius: f32,
     color: Hsv,
     pressed: bool,
-    background_colour: Hsv
+    background_colour: Hsv,
+    tool: Enum
 }
 
 fn model(app: &App) -> Model {
@@ -40,6 +46,7 @@ fn model(app: &App) -> Model {
         color: hsv(10.0, 0.5, 1.0),
         pressed: false,
         background_colour: hsv(0.0, 0.0, 255.0),
+        tool: Enum::Ellipse,
     }
 }
 
@@ -67,6 +74,18 @@ fn mouse_moved(app: &App, model: &mut Model, coord: Point2) {
     }
 }
 
+impl fmt::Display for Enum {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+       match self {
+           Enum::Square => write!(f, "Square"),
+           Enum::Rectangle => write!(f, "Rectangle"),
+           Enum::Line => write!(f, "Line"),
+           Enum::Ellipse => write!(f, "Ellipse"),
+           Enum::Triangle => write!(f, "Triangle"),
+       }
+    }
+}
+
 fn update(_app: &App, model: &mut Model, update: Update) {
     let Model {
         ref mut egui,
@@ -74,8 +93,10 @@ fn update(_app: &App, model: &mut Model, update: Update) {
         ref mut color,
         ref mut pressed,
         ref mut history,
-        ref mut background_colour
+        ref mut background_colour,
+        ref mut tool
     } = *model;
+
 
     egui.set_elapsed_time(update.since_start);
     let ctx = egui.begin_frame();
@@ -85,10 +106,24 @@ fn update(_app: &App, model: &mut Model, update: Update) {
             ui.separator();
             ui.label("Tune parameters with ease");
             ui.add(egui::Slider::new(radius, 10.0..=100.0).text("Radius"));
+            for option in [Enum::Square, Enum::Rectangle, Enum::Line, Enum::Ellipse, Enum::Triangle] {
+                // SelectableLabel is a similar widget; it works like a button that can be checked. Here it serves the 
+                // purpose of a radio button, with a single option being selected at any time
+                if ui
+                    .add(egui::SelectableLabel::new(
+                        model.tool == option,
+                        option.to_string(),
+                    ))
+                    .clicked()
+                {
+                    model.tool = option;
+                }
+            }
+
             ui.label("Select the ellipse colour");
             edit_hsv(ui, color);
             ui.label("Select the background colour");
-            edit_hsv(ui,background_colour)
+            edit_hsv(ui,background_colour);
         });
 }
 
