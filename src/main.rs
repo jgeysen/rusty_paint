@@ -39,7 +39,7 @@ fn model(app: &App) -> Model {
         .mouse_released(mouse_released)
         .key_pressed(key_pressed)
         .mouse_moved(mouse_moved)
-        .title("Nannou + Egui")
+        .title("Rusty Trombone")
         .size(WIDTH as u32, HEIGHT as u32)
         .raw_event(raw_window_event) // This is where we forward all raw events for egui to process them
         .view(view) // The function that will be called for presenting graphics to a frame.
@@ -179,6 +179,9 @@ fn update(_app: &App, model: &mut Model, update: Update) {
             edit_hsv(ui, color);
             ui.label("Select the background colour");
             edit_hsv(ui,background_colour);
+            if ui.add(egui::Button::new("Save your drawing!")).clicked(){
+                println!("Your drawing is saved!")
+            }
         });
 }
 
