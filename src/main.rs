@@ -10,6 +10,7 @@ fn main() {
 
 struct Model {
     egui: Egui,
+    history: Vec<(f32,f32)>,
     radius: f32,
     color: Hsv,
 }
@@ -30,6 +31,7 @@ fn model(app: &App) -> Model {
 
     Model {
         egui: Egui::from_window(&window),
+        history: Vec::new(),
         radius: 40.0,
         color: hsv(10.0, 0.5, 1.0),
     }
@@ -39,11 +41,7 @@ fn mouse_pressed(_app: &App, _model: &mut Model, _button: MouseButton) {
     let draw = _app.draw();
 
     if _button == MouseButton::Left{
-         dbg!(_app.mouse.x, _app.mouse.y);
-         draw.ellipse()
-        .x_y(100.0, 100.0)
-        .radius(_model.radius)
-        .color(_model.color);
+        _model.history.extend([(_app.mouse.x, _app.mouse.y)]);
     }
 }
 
@@ -52,6 +50,7 @@ fn update(_app: &App, model: &mut Model, update: Update) {
         ref mut egui,
         ref mut radius,
         ref mut color,
+        ref mut history,
     } = *model;
 
     egui.set_elapsed_time(update.since_start);
@@ -80,6 +79,13 @@ fn view(app: &App, model: &Model, frame: Frame) {
         .x_y(app.mouse.x, app.mouse.y)
         .radius(model.radius)
         .color(model.color);
+
+    for (x,y) in &model.history{
+         draw.ellipse()
+        .x_y(*x, *y)
+        .radius(model.radius)
+        .color(model.color);
+    }
 
     draw.to_frame(app, &frame).unwrap();
 
