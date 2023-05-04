@@ -8,9 +8,31 @@ fn main() {
     nannou::app(model).update(update).run();
 }
 
+struct Ellipse {
+    x: f32,
+    y: f32,
+    color: Hsv,
+    radius: f32
+}
+
+struct Triangle {
+    x: f32,
+    y: f32,
+    z: f32,
+    color: Hsv
+}
+
+struct Rectangle {
+    x: f32,
+    y: f32,
+    z: f32,
+    w: f32,
+    color: Hsv
+}
+
 struct Model {
     egui: Egui,
-    history: Vec<(f32,f32,Hsv,f32)>,
+    history: Vec<Vec<Ellipse>>,
     line_history: Vec<Line>,
     line_start: Vec<(f32, f32)>,
     radius: f32,
@@ -59,7 +81,6 @@ fn mouse_pressed(_app: &App, model: &mut Model, button: MouseButton) {
         let draw = _app.draw();
         model.pressed = true;
 
-
         if !model.line_start.is_empty() {
             let line = Line {
                 thickness: model.radius,
@@ -83,13 +104,14 @@ fn mouse_released(_app: &App, model: &mut Model, _button: MouseButton) {
 fn mouse_moved(app: &App, model: &mut Model, coord: Point2) {
     let draw = app.draw();
     if model.pressed {
-         draw.ellipse()
-        .x_y(coord[0], coord[1])
-        .radius(model.radius)
-        .color(model.color);
-        
         if !model.egui.ctx().is_pointer_over_area() {
-            model.history.extend([(app.mouse.x, app.mouse.y, model.color, model.radius)]);
+            let ellipse = Ellipse {
+                    x: app.mouse.x,
+                    y: app.mouse.y,
+                    color: model.color,
+                    radius: model.radius
+            };
+            model.history.extend([vec![ellipse]]);
         }
     }
 }
@@ -143,11 +165,13 @@ fn view(app: &App, model: &Model, frame: Frame) {
             .points(nannou::geom::vec2(line.start_point[0].0, line.start_point[0].1), nannou::geom::vec2(line.end_point[0].0, line.end_point[0].1));
     }
 
-    for (x,y,color,radius) in &model.history{
-         draw.ellipse()
-        .x_y(*x, *y)
-        .radius(*radius)
-        .color(*color);
+    for ellipse_vec in &model.history{
+        for el in ellipse_vec{
+             draw.ellipse()
+            .x_y(el.x, el.y)
+            .radius(el.radius)
+            .color(el.color);
+        }
     }
 
     draw.to_frame(app, &frame).unwrap();
