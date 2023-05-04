@@ -86,8 +86,6 @@ fn update(_app: &App, model: &mut Model, update: Update) {
         ref mut background_colour
     } = *model;
 
-    dbg!(&model.history);
-
     egui.set_elapsed_time(update.since_start);
     let ctx = egui.begin_frame();
     egui::Window::new("Drawing parameters")
