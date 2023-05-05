@@ -1,0 +1,1 @@
+# A paint application implemented in Rust
