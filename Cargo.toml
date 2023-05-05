@@ -9,3 +9,4 @@ authors = ["danc", "jori", "anas", "raph", "raul"]
 [dependencies]
 nannou = "0.18.1"
 nannou_egui = "*"
+nannou_audio = "*"
